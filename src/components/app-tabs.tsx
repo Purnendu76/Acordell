@@ -38,9 +38,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             label = 'Home';
             iconName = isFocused ? 'home' : 'home-outline';
             break;
-          case 'pages/Shop':
-            label = 'Shop';
-            iconName = isFocused ? 'cake-variant' : 'cake-variant-outline';
+          case 'pages/Products':
+            label = 'Products';
+            iconName = isFocused ? 'storefront' : 'storefront-outline';
+            break;
+          case 'pages/Orders':
+            label = 'Orders';
+            iconName = isFocused ? 'clipboard-text' : 'clipboard-text-outline';
             break;
           case 'pages/ContectUs':
             label = 'Contact Us';
@@ -95,7 +99,8 @@ export default function AppTabs() {
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
       <Tabs.Screen name="pages/Home" />
-      <Tabs.Screen name="pages/Shop" />
+      <Tabs.Screen name="pages/Products" />
+      <Tabs.Screen name="pages/Orders" />
       <Tabs.Screen name="pages/ContectUs" />
       <Tabs.Screen name="pages/Account" />
     </Tabs>
