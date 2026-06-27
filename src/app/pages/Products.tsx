@@ -7,7 +7,6 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import Animated, { useSharedValue, withRepeat, withSequence, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 
-// Pulsing Skeleton loader block component
 function Skeleton({ style }: { style: any }) {
   const opacity = useSharedValue(0.3);
 
@@ -29,16 +28,12 @@ function Skeleton({ style }: { style: any }) {
   return <Animated.View style={[{ backgroundColor: '#26293b', borderRadius: 4 }, style, animatedStyle]} />;
 }
 
-// Skeleton view for the products page matching productCard dimensions
 function ProductsSkeleton() {
   return (
     <View style={{ flex: 1 }}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <View key={i} style={styles.productCard}>
-          {/* Left image skeleton */}
           <Skeleton style={{ width: 90, height: 90, borderRadius: 8 }} />
-          
-          {/* Right info skeleton */}
           <View style={[styles.productInfo, { gap: 8 }]}>
             <View style={styles.productHeader}>
               <View style={styles.brandNameContainer}>
@@ -92,7 +87,6 @@ interface Product {
   images: ProductImage[] | string[];
   description: string;
   short_description: string;
-  // Pre-processed properties for optimization
   brandName?: string;
   cleanName?: string;
   parsedCategories?: string[];
@@ -101,7 +95,6 @@ interface Product {
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&auto=format&fit=crop&q=80';
 
-// Helper to parse Category Name safely from string representation or object
 const parseCategoryName = (c: Category | string): string => {
   if (typeof c === 'string') {
     if (c.includes('name=')) {
@@ -113,7 +106,6 @@ const parseCategoryName = (c: Category | string): string => {
   return c && c.name ? c.name : '';
 };
 
-// Helper to parse Image Source safely
 const parseImageSrc = (images: ProductImage[] | string[] | any): string => {
   if (!images || images.length === 0) return FALLBACK_IMAGE;
   const firstImg = images[0];
@@ -127,7 +119,6 @@ const parseImageSrc = (images: ProductImage[] | string[] | any): string => {
   return firstImg && firstImg.src ? firstImg.src : FALLBACK_IMAGE;
 };
 
-// Helper to parse Brand Name safely
 const getBrandName = (product: Product): string => {
   if (product.brands && product.brands.length > 0) {
     const brandObj = product.brands[0];
@@ -141,13 +132,11 @@ const getBrandName = (product: Product): string => {
     }
   }
 
-  // Fallback 1: Extract brand from "by BrandName" in the product name
   const byMatch = product.name.match(/\s+by\s+([A-Za-z0-9\s'’]+)$/i);
   if (byMatch) {
     return byMatch[1].trim();
   }
 
-  // Fallback 2: Check if name starts with a known brand
   const knownBrands = [
     'Creed', 'Chanel', 'Dior', 'Tom Ford', 'Versace', 'Armani',
     'Mancera', 'Rayhaan', 'Rasasi', 'Sospiro', 'Unique\'e Luxury',
@@ -164,12 +153,10 @@ const getBrandName = (product: Product): string => {
   return 'Acordell';
 };
 
-// Helper to clean up perfume title (removes brand name suffix like "by Issey Miyake" if present)
 const cleanProductName = (name: string): string => {
   return name.replace(/\s+by\s+[A-Za-z0-9\s'’]+$/i, '').trim();
 };
 
-// Helper to strip HTML tags safely
 const stripHtml = (html: string): string => {
   if (!html) return '';
   return html
@@ -197,13 +184,17 @@ export default function ProductsScreen() {
   const [activeMenuProduct, setActiveMenuProduct] = useState<Product | null>(null);
   const [modalLoading, setModalLoading] = useState<boolean>(false);
 
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [manageStock, setManageStock] = useState<boolean>(false);
+  const [stockCount, setStockCount] = useState<string>('');
+  const [saveLoading, setSaveLoading] = useState<boolean>(false);
+
   const fetchProducts = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     setError(null);
     try {
       const response = await axios.get<Product[]>('https://n8n.srv917960.hstgr.cloud/webhook/acordell-get-products');
       if (Array.isArray(response.data)) {
-        // Pre-process items once to optimize list rendering cycles and avoid CPU spikes
         const processed = response.data.map((p) => ({
           ...p,
           brandName: getBrandName(p),
@@ -233,7 +224,6 @@ export default function ProductsScreen() {
     fetchProducts(false);
   };
 
-  // Triggers category transition with brief loading animation
   const handleCategoryPress = (category: string) => {
     setSelectedCategory(category);
     setLoading(true);
@@ -242,7 +232,6 @@ export default function ProductsScreen() {
     }, 300);
   };
 
-  // Triggers details screen modal with transition spinner
   const handleProductPress = (product: Product) => {
     setSelectedProduct(product);
     setModalLoading(true);
@@ -251,7 +240,54 @@ export default function ProductsScreen() {
     }, 400);
   };
 
-  // Render Fragrance Notes Cards
+  const handleEditPress = (product: Product) => {
+    setEditingProduct(product);
+    setActiveMenuProduct(null);
+    
+    const hasCount = product.stock_quantity !== null && product.stock_quantity !== undefined;
+    setManageStock(hasCount);
+    setStockCount(hasCount ? String(product.stock_quantity) : '');
+  };
+
+  const handleSaveStock = async () => {
+    if (!editingProduct) return;
+
+    let qty: number | null = null;
+    const hasExistingCount = editingProduct.stock_quantity !== null && editingProduct.stock_quantity !== undefined;
+
+    if (hasExistingCount || manageStock) {
+      const parsed = parseInt(stockCount, 10);
+      if (isNaN(parsed) || parsed <= 1) {
+        Alert.alert('Validation Error', 'Stock count must be a number greater than 1.');
+        return;
+      }
+      qty = parsed;
+    }
+
+    setSaveLoading(true);
+    try {
+      const payload = {
+        id: editingProduct.id,
+        manage_stock: hasExistingCount || manageStock,
+        stock_quantity: qty,
+        stock_status: 'instock',
+      };
+
+      await axios.post('https://n8n.srv917960.hstgr.cloud/webhook/acordell-edit-product', payload);
+      
+      Alert.alert('Success', 'Stock status updated successfully!');
+      
+      setEditingProduct(null);
+      setSelectedProduct(null);
+      fetchProducts(false);
+    } catch (err: any) {
+      console.error('Error saving stock status:', err);
+      Alert.alert('Error', err?.message || 'Failed to update stock. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   const renderNotes = (htmlDescription: string) => {
     if (!htmlDescription) return null;
     
@@ -274,37 +310,35 @@ export default function ProductsScreen() {
       <View style={styles.notesSection}>
         <ThemedText style={styles.sectionHeader}>Fragrance Notes</ThemedText>
         <View style={styles.notesGrid}>
-          {topNotes && (
+          {!!topNotes ? (
             <View style={styles.noteCard}>
               <ThemedText style={styles.noteLabel}>Top Notes</ThemedText>
               <ThemedText style={styles.noteValue}>{topNotes.trim()}</ThemedText>
             </View>
-          )}
-          {heartNotes && (
+          ) : null}
+          {!!heartNotes ? (
             <View style={styles.noteCard}>
               <ThemedText style={styles.noteLabel}>Heart Notes</ThemedText>
               <ThemedText style={styles.noteValue}>{heartNotes.trim()}</ThemedText>
             </View>
-          )}
-          {baseNotes && (
+          ) : null}
+          {!!baseNotes ? (
             <View style={styles.noteCard}>
               <ThemedText style={styles.noteLabel}>Base Notes</ThemedText>
               <ThemedText style={styles.noteValue}>{baseNotes.trim()}</ThemedText>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
     );
   };
 
-  // Extract all categories dynamically - Memoized to prevent recalculations on every keystroke
   const categoriesList = useMemo(() => {
     return ['All', ...new Set(products.flatMap(p => 
       p.parsedCategories || []
     ).filter(Boolean))];
   }, [products]);
 
-  // Memoize filtered products list
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     return products.filter((product) => {
@@ -320,9 +354,10 @@ export default function ProductsScreen() {
     });
   }, [products, selectedCategory, searchQuery]);
 
+  const hasExistingCount = editingProduct?.stock_quantity !== null && editingProduct?.stock_quantity !== undefined;
+
   return (
     <ThemedView style={styles.container}>
-      {/* Search Input */}
       <View style={styles.searchContainer}>
         <MaterialCommunityIcons name="magnify" size={20} color="#94a3b8" style={styles.searchIcon} />
         <TextInput
@@ -334,8 +369,7 @@ export default function ProductsScreen() {
         />
       </View>
 
-      {/* Dynamic Category Horizontal Scroll */}
-      {!loading && !error && categoriesList.length > 1 && (
+      {!loading && !error && categoriesList.length > 1 ? (
         <View style={styles.categoriesWrapper}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
             {categoriesList.map((category) => {
@@ -349,23 +383,15 @@ export default function ProductsScreen() {
                     isSelected && styles.categoryPillSelected,
                   ]}
                 >
-                  <ThemedText
-                    style={[
-                      styles.categoryText,
-                      isSelected && styles.categoryTextSelected,
-                    ]}
-                  >
-                    {category}
-                  </ThemedText>
+                  <ThemedText style={[styles.categoryText, isSelected && styles.categoryTextSelected]}>{category}</ThemedText>
                 </Pressable>
               );
             })}
           </ScrollView>
         </View>
-      )}
+      ) : null}
 
-      {/* Metrics Row */}
-      {!loading && !error && (
+      {!loading && !error ? (
         <View style={styles.metricsRow}>
           <View style={styles.metricItem}>
             <ThemedText style={styles.metricLabel}>FRAGRANCES</ThemedText>
@@ -382,9 +408,8 @@ export default function ProductsScreen() {
             <ThemedText style={styles.metricValue}>INR (₹)</ThemedText>
           </View>
         </View>
-      )}
+      ) : null}
 
-      {/* Main Content */}
       {loading ? (
         <ProductsSkeleton />
       ) : error ? (
@@ -420,7 +445,7 @@ export default function ProductsScreen() {
                     </View>
                     <Pressable
                       onPress={(e) => {
-                        e.stopPropagation(); // Stop details screen from opening
+                        e.stopPropagation();
                         setActiveMenuProduct(product);
                       }}
                       style={styles.dotsButton}
@@ -432,32 +457,21 @@ export default function ProductsScreen() {
                   <View style={styles.ratingRow}>
                     <MaterialCommunityIcons name="star" size={14} color="#fbbf24" />
                     <ThemedText style={styles.ratingText}>{displayRating}</ThemedText>
-                    {product.parsedCategories && product.parsedCategories.length > 0 && (
-                      <ThemedText style={styles.categoryBadge}>
-                        {product.parsedCategories[0]}
-                      </ThemedText>
-                    )}
+                    {product.parsedCategories && product.parsedCategories.length > 0 ? (
+                      <ThemedText style={styles.categoryBadge}>{product.parsedCategories[0]}</ThemedText>
+                    ) : null}
                   </View>
                   
                   <View style={styles.productFooter}>
                     <View style={styles.priceContainer}>
-                      {product.on_sale && regPriceVal > priceVal && (
-                        <ThemedText style={styles.regularPrice}>
-                          ₹{regPriceVal.toLocaleString('en-IN')}
-                        </ThemedText>
-                      )}
-                      <ThemedText style={styles.productPrice}>
-                        ₹{priceVal.toLocaleString('en-IN')}
-                      </ThemedText>
+                      {product.on_sale && regPriceVal > priceVal ? (
+                        <ThemedText style={styles.regularPrice}>{`₹${regPriceVal.toLocaleString('en-IN')}`}</ThemedText>
+                      ) : null}
+                      <ThemedText style={styles.productPrice}>{`₹${priceVal.toLocaleString('en-IN')}`}</ThemedText>
                     </View>
 
                     <View style={styles.statusContainer}>
-                      <ThemedText style={[
-                        styles.statusText,
-                        !isInstock && styles.statusTextOutOfStock
-                      ]}>
-                        {isInstock ? (product.stock_quantity ? `${product.stock_quantity} left` : 'In Stock') : 'Out of Stock'}
-                      </ThemedText>
+                      <ThemedText style={[styles.statusText, !isInstock && styles.statusTextOutOfStock]}>{isInstock ? (product.stock_quantity ? `${product.stock_quantity} left` : 'In Stock') : 'Out of Stock'}</ThemedText>
                     </View>
                   </View>
                 </View>
@@ -478,28 +492,19 @@ export default function ProductsScreen() {
         />
       )}
 
-      {/* Details Bottom Sheet Modal */}
-      {selectedProduct && (
+      {selectedProduct ? (
         <View style={StyleSheet.absoluteFillObject}>
-          {/* Backdrop */}
           <Pressable style={styles.modalBackdrop} onPress={() => setSelectedProduct(null)} />
           
-          {/* Modal Content container */}
           <ThemedView style={styles.modalContainer}>
-            {/* Header */}
             <View style={styles.modalHeader}>
               <Pressable style={styles.closeButton} onPress={() => setSelectedProduct(null)}>
                 <MaterialCommunityIcons name="close" size={24} color="#ffffff" />
               </Pressable>
-              <ThemedText style={styles.modalHeaderTitle} numberOfLines={1}>
-                {selectedProduct.brandName || 'Acordell'}
-              </ThemedText>
-              <Pressable style={styles.modalFavoriteButton}>
-                <MaterialCommunityIcons name="heart-outline" size={24} color="#94a3b8" />
-              </Pressable>
+              <ThemedText style={styles.modalHeaderTitle} numberOfLines={1}>{selectedProduct.brandName || 'Acordell'}</ThemedText>
+              <View style={{ width: 24 }} />
             </View>
 
-            {/* Scrollable details / Loader */}
             {modalLoading ? (
               <View style={styles.modalLoadingContainer}>
                 <ActivityIndicator size="large" color="#818cf8" />
@@ -522,80 +527,75 @@ export default function ProductsScreen() {
                   <View style={styles.modalRatingRow}>
                     <View style={styles.modalStars}>
                       <MaterialCommunityIcons name="star" size={15} color="#fbbf24" />
-                      <ThemedText style={styles.modalRatingText}>
-                        {(parseFloat(selectedProduct.average_rating) > 0 
-                          ? parseFloat(selectedProduct.average_rating) 
-                          : (4.5 + (selectedProduct.id % 6) * 0.1)
-                        ).toFixed(1)}
-                      </ThemedText>
+                      <ThemedText style={styles.modalRatingText}>{(parseFloat(selectedProduct.average_rating) > 0 ? parseFloat(selectedProduct.average_rating) : (4.5 + (selectedProduct.id % 6) * 0.1)).toFixed(1)}</ThemedText>
                     </View>
-                    <ThemedText style={styles.modalCategoryBadge}>
-                      {selectedProduct.parsedCategories && selectedProduct.parsedCategories.length > 0 ? selectedProduct.parsedCategories[0] : 'Fragrance'}
-                    </ThemedText>
-                    <ThemedText style={[
-                      styles.modalStockBadge,
-                      selectedProduct.stock_status !== 'instock' && styles.modalStockBadgeOutOfStock
-                    ]}>
-                      {selectedProduct.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}
-                    </ThemedText>
+                    <ThemedText style={styles.modalCategoryBadge}>{selectedProduct.parsedCategories && selectedProduct.parsedCategories.length > 0 ? selectedProduct.parsedCategories[0] : 'Fragrance'}</ThemedText>
+                    <ThemedText style={[styles.modalStockBadge, selectedProduct.stock_status !== 'instock' && styles.modalStockBadgeOutOfStock]}>{selectedProduct.stock_status === 'instock' ? 'In Stock' : 'Out of Stock'}</ThemedText>
                   </View>
 
-                  {/* Description */}
                   <View style={{ marginTop: 16 }}>
                     <ThemedText style={styles.sectionHeader}>Description</ThemedText>
-                    <ThemedText style={styles.descriptionText}>
-                      {stripHtml(selectedProduct.description || selectedProduct.short_description || 'No description available.')}
-                    </ThemedText>
+                    <ThemedText style={styles.descriptionText}>{stripHtml(selectedProduct.description || selectedProduct.short_description || 'No description available.')}</ThemedText>
                   </View>
 
-                  {/* Fragrance Notes Cards */}
                   {renderNotes(selectedProduct.description)}
                 </View>
               </ScrollView>
             )}
 
-            {/* Sticky Action Footer */}
             <View style={styles.modalFooter}>
-              <View style={styles.modalPriceContainer}>
-                <ThemedText style={styles.modalPriceLabel}>Price</ThemedText>
-                <ThemedText style={styles.modalPrice}>
-                  ₹{parseFloat(selectedProduct.price || '0').toLocaleString('en-IN')}
-                </ThemedText>
+              <View style={styles.modalButtonsRow}>
+                <Pressable
+                  onPress={() => handleEditPress(selectedProduct)}
+                  style={styles.modalEditButtonFull}
+                >
+                  <ThemedText style={styles.modalEditButtonText}>Edit</ThemedText>
+                </Pressable>
+                
+                <Pressable
+                  onPress={() => {
+                    Alert.alert(
+                      'Delete Product',
+                      `Are you sure you want to delete "${selectedProduct.cleanName}"?`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            Alert.alert('Action Triggered', `Product "${selectedProduct.cleanName}" deleted.`);
+                            setSelectedProduct(null);
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                  style={styles.modalDeleteButtonFull}
+                >
+                  <ThemedText style={styles.modalDeleteButtonText}>Delete</ThemedText>
+                </Pressable>
               </View>
-              <Pressable
-                style={[
-                  styles.modalAddCartButton,
-                  selectedProduct.stock_status !== 'instock' && styles.modalAddCartButtonDisabled
-                ]}
-                disabled={selectedProduct.stock_status !== 'instock'}
-              >
-                <MaterialCommunityIcons name="shopping-outline" size={18} color="#ffffff" />
-                <ThemedText style={styles.modalAddCartButtonText}>
-                  {selectedProduct.stock_status === 'instock' ? 'Add to Cart' : 'Out of Stock'}
-                </ThemedText>
-              </Pressable>
+
+              <View style={styles.modalPriceFooterContainer}>
+                <ThemedText style={styles.modalPriceLabel}>Price</ThemedText>
+                <ThemedText style={styles.modalPrice}>{`₹${parseFloat(selectedProduct.price || '0').toLocaleString('en-IN')}`}</ThemedText>
+              </View>
             </View>
           </ThemedView>
         </View>
-      )}
+      ) : null}
 
-      {/* 3-Dot Options Context Bottom Sheet Menu */}
-      {activeMenuProduct && (
+      {activeMenuProduct ? (
         <View style={StyleSheet.absoluteFillObject}>
-          {/* Backdrop */}
           <Pressable style={styles.menuBackdrop} onPress={() => setActiveMenuProduct(null)} />
           
-          {/* Menu Sheet Panel */}
           <ThemedView style={styles.menuSheet}>
             <View style={styles.menuHeader}>
-              <ThemedText style={styles.menuTitle} numberOfLines={1}>
-                {activeMenuProduct.cleanName || activeMenuProduct.name}
-              </ThemedText>
+              <ThemedText style={styles.menuTitle} numberOfLines={1}>{activeMenuProduct.cleanName || activeMenuProduct.name}</ThemedText>
               <ThemedText style={styles.menuSubtitle}>{activeMenuProduct.brandName}</ThemedText>
             </View>
 
             <View style={styles.menuOptionsList}>
-              {/* Add Option */}
               <Pressable
                 onPress={() => {
                   Alert.alert('Action Triggered', `Added "${activeMenuProduct.cleanName}" to cart!`);
@@ -608,27 +608,17 @@ export default function ProductsScreen() {
                 disabled={activeMenuProduct.stock_status !== 'instock'}
               >
                 <MaterialCommunityIcons name="plus-box-outline" size={22} color={activeMenuProduct.stock_status === 'instock' ? '#818cf8' : '#475569'} />
-                <ThemedText style={[
-                  styles.menuOptionText,
-                  activeMenuProduct.stock_status !== 'instock' && styles.menuOptionTextDisabled
-                ]}>
-                  {activeMenuProduct.stock_status === 'instock' ? 'Add to Cart' : 'Out of Stock'}
-                </ThemedText>
+                <ThemedText style={[styles.menuOptionText, activeMenuProduct.stock_status !== 'instock' && styles.menuOptionTextDisabled]}>{activeMenuProduct.stock_status === 'instock' ? 'Add to Cart' : 'Out of Stock'}</ThemedText>
               </Pressable>
 
-              {/* Edit Option */}
               <Pressable
-                onPress={() => {
-                  Alert.alert('Action Triggered', `Edit details for "${activeMenuProduct.cleanName}" (ID: ${activeMenuProduct.id})`);
-                  setActiveMenuProduct(null);
-                }}
+                onPress={() => handleEditPress(activeMenuProduct)}
                 style={styles.menuOptionItem}
               >
                 <MaterialCommunityIcons name="pencil-outline" size={22} color="#f59e0b" />
                 <ThemedText style={styles.menuOptionText}>Edit Product</ThemedText>
               </Pressable>
 
-              {/* Delete Option */}
               <Pressable
                 onPress={() => {
                   Alert.alert(
@@ -657,7 +647,75 @@ export default function ProductsScreen() {
             </Pressable>
           </ThemedView>
         </View>
-      )}
+      ) : null}
+
+      {editingProduct ? (
+        <View style={StyleSheet.absoluteFillObject}>
+          <Pressable style={styles.dialogBackdrop} onPress={() => setEditingProduct(null)} />
+
+          <View style={styles.dialogWrapper} pointerEvents="box-none">
+            <View style={styles.dialogContainer}>
+              <ThemedText style={styles.dialogTitle}>Edit Stock Status</ThemedText>
+              <ThemedText style={styles.dialogSubtitle} numberOfLines={1}>{editingProduct.cleanName || editingProduct.name}</ThemedText>
+
+              <View style={styles.dialogInfoRow}>
+                <ThemedText style={styles.dialogInfoLabel}>Current Status: </ThemedText>
+                <ThemedText style={styles.dialogInfoValue}>{editingProduct.stock_quantity !== null ? `${editingProduct.stock_quantity} left` : (editingProduct.stock_status === 'instock' ? 'In Stock' : 'Out of Stock')}</ThemedText>
+              </View>
+
+              {!hasExistingCount ? (
+                <Pressable
+                  onPress={() => setManageStock(!manageStock)}
+                  style={styles.checkboxRow}
+                >
+                  <MaterialCommunityIcons
+                    name={manageStock ? "checkbox-marked" : "checkbox-blank-outline"}
+                    size={22}
+                    color={manageStock ? "#818cf8" : "#94a3b8"}
+                  />
+                  <ThemedText style={styles.checkboxLabel}>Track Stock Count</ThemedText>
+                </Pressable>
+              ) : null}
+
+              {(hasExistingCount || manageStock) ? (
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.inputLabel}>Stock Count</ThemedText>
+                  <TextInput
+                    value={stockCount}
+                    onChangeText={setStockCount}
+                    placeholder="Enter stock count (more than 1)"
+                    placeholderTextColor="#64748b"
+                    keyboardType="number-pad"
+                    style={styles.dialogTextInput}
+                  />
+                </View>
+              ) : null}
+
+              <View style={styles.dialogFooter}>
+                <Pressable 
+                  onPress={() => setEditingProduct(null)} 
+                  style={styles.dialogCancelButton}
+                  disabled={saveLoading}
+                >
+                  <ThemedText style={styles.dialogCancelButtonText}>Cancel</ThemedText>
+                </Pressable>
+                
+                <Pressable
+                  onPress={handleSaveStock}
+                  style={styles.dialogSaveButton}
+                  disabled={saveLoading}
+                >
+                  {saveLoading ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <ThemedText style={styles.dialogSaveButtonText}>Save</ThemedText>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </ThemedView>
   );
 }
@@ -927,9 +985,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  modalFavoriteButton: {
-    padding: 4,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 10,
   },
   modalScrollContent: {
     paddingBottom: 40,
@@ -1040,14 +1098,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: '#1e2133',
     backgroundColor: '#12131e',
+    gap: 12,
   },
   modalPriceContainer: {
     flexDirection: 'column',
@@ -1063,22 +1120,43 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginTop: 2,
   },
-  modalAddCartButton: {
+  modalButtonsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#818cf8',
-    paddingHorizontal: 20,
+    width: '100%',
+    gap: 10,
+  },
+  modalEditButtonFull: {
+    flex: 1,
+    backgroundColor: '#f59e0b',
     paddingVertical: 12,
     borderRadius: 8,
-    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalAddCartButtonDisabled: {
-    backgroundColor: '#334155',
-  },
-  modalAddCartButtonText: {
+  modalEditButtonText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  modalDeleteButtonFull: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDeleteButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  modalPriceFooterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 4,
   },
   modalLoadingContainer: {
     flex: 1,
@@ -1169,5 +1247,124 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#94a3b8',
+  },
+  dialogBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    zIndex: 3000,
+  },
+  dialogWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    zIndex: 3001,
+  },
+  dialogContainer: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#12131e',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#1e2133',
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  dialogSubtitle: {
+    fontSize: 12,
+    color: '#818cf8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  dialogInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dialogInfoLabel: {
+    fontSize: 13,
+    color: '#94a3b8',
+  },
+  dialogInfoValue: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#cbd5e1',
+    fontWeight: '500',
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+  },
+  dialogTextInput: {
+    backgroundColor: '#161824',
+    borderWidth: 1,
+    borderColor: '#1e2133',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 48,
+    color: '#ffffff',
+    fontSize: 15,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+      },
+    }),
+  },
+  dialogFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 8,
+  },
+  dialogCancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogCancelButtonText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  dialogSaveButton: {
+    backgroundColor: '#818cf8',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
+  dialogSaveButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
