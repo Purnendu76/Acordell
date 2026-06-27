@@ -16,7 +16,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           return null;
         }
 
-        const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 
         const onPress = () => {

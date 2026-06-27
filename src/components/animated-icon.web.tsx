@@ -1,3 +1,4 @@
+import React from 'react';
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
@@ -83,6 +84,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'absolute',
   },
   glow: {
     width: 201,
@@ -96,7 +98,6 @@ const styles = StyleSheet.create({
     height: 128,
   },
   image: {
-    position: 'absolute',
     width: 76,
     height: 71,
   },

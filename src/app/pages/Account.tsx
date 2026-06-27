@@ -7,7 +7,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 export default function AccountScreen() {
   return (
     <ThemedView style={styles.container}>
-      <MaterialCommunityIcons name="person-outline" size={64} color="#818cf8" />
+      <MaterialCommunityIcons name="account-outline" size={64} color="#818cf8" />
       <ThemedText type="subtitle" style={styles.title}>Your Account</ThemedText>
       <ThemedText style={styles.description}>
         Log in to track your orders, manage delivery addresses, and configure preferences.

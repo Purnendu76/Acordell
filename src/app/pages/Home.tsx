@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, Platform, LayoutAnimation } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, LayoutAnimation } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
