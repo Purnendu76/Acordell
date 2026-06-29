@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import Animated, { useSharedValue, withRepeat, withSequence, withTiming, useAnimatedStyle } from 'react-native-reanimated';
+import { useToast } from '@/components/toast';
 
 function Skeleton({ style }: { style: any }) {
   const opacity = useSharedValue(0.3);
@@ -163,16 +164,17 @@ const stripHtml = (html: string): string => {
     .replace(/<p>/g, '')
     .replace(/<\/p>/g, '\n\n')
     .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<(?:"[^"]*"|'[^']*'|[^'">])*>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/<[^>]*>/g, '')
     .trim();
 };
 
 export default function ProductsScreen() {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -258,7 +260,7 @@ export default function ProductsScreen() {
     if (hasExistingCount || manageStock) {
       const parsed = parseInt(stockCount, 10);
       if (isNaN(parsed) || parsed <= 1) {
-        Alert.alert('Validation Error', 'Stock count must be a number greater than 1.');
+        showToast('Stock count must be a number greater than 1.', { type: 'warning' });
         return;
       }
       qty = parsed;
@@ -275,14 +277,14 @@ export default function ProductsScreen() {
 
       await axios.post('https://n8n.srv917960.hstgr.cloud/webhook/acordell-edit-product', payload);
       
-      Alert.alert('Success', 'Stock status updated successfully!');
+      showToast('Stock status updated successfully!', { type: 'success' });
       
       setEditingProduct(null);
       setSelectedProduct(null);
       fetchProducts(false);
     } catch (err: any) {
       console.error('Error saving stock status:', err);
-      Alert.alert('Error', err?.message || 'Failed to update stock. Please try again.');
+      showToast(err?.message || 'Failed to update stock. Please try again.', { type: 'error' });
     } finally {
       setSaveLoading(false);
     }
@@ -563,7 +565,7 @@ export default function ProductsScreen() {
                           text: 'Delete',
                           style: 'destructive',
                           onPress: () => {
-                            Alert.alert('Action Triggered', `Product "${selectedProduct.cleanName}" deleted.`);
+                            showToast(`Product "${selectedProduct.cleanName}" deleted successfully.`, { type: 'success' });
                             setSelectedProduct(null);
                           },
                         },
@@ -629,7 +631,7 @@ export default function ProductsScreen() {
                       {
                         text: 'Delete',
                         style: 'destructive',
-                        onPress: () => Alert.alert('Action Triggered', `Product "${activeMenuProduct.cleanName}" deleted.`),
+                        onPress: () => showToast(`Product "${activeMenuProduct.cleanName}" deleted successfully.`, { type: 'success' }),
                       },
                     ]
                   );
@@ -650,7 +652,7 @@ export default function ProductsScreen() {
       ) : null}
 
       {editingProduct ? (
-        <View style={StyleSheet.absoluteFillObject}>
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
           <Pressable style={styles.dialogBackdrop} onPress={() => setEditingProduct(null)} />
 
           <View style={styles.dialogWrapper} pointerEvents="box-none">

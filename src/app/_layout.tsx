@@ -8,6 +8,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { ThemedText } from '@/components/themed-text';
 import React from 'react';
+import { ToastProvider } from '@/components/toast';
 
 function GlobalHeader() {
   const insets = useSafeAreaInsets();
@@ -42,11 +43,13 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <View style={styles.appContainer}>
-        <GlobalHeader />
-        <AppTabs />
-      </View>
+      <ToastProvider>
+        <AnimatedSplashOverlay />
+        <View style={styles.appContainer}>
+          <GlobalHeader />
+          <AppTabs />
+        </View>
+      </ToastProvider>
     </ThemeProvider>
   );
 }
