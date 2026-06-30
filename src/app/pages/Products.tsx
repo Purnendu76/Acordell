@@ -278,6 +278,7 @@ export default function ProductsScreen() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProducts();
   }, []);
 
@@ -363,7 +364,7 @@ export default function ProductsScreen() {
   const handleDeleteProduct = async (productId: number, productName: string) => {
     setDeleteLoading(true);
     try {
-      const response = await axios.delete(
+      await axios.delete(
         `https://n8n.srv917960.hstgr.cloud/webhook/acordell-delete-product?id=${productId}&product_id=${productId}`,
         {
           data: {
@@ -372,7 +373,6 @@ export default function ProductsScreen() {
           },
         }
       );
-      console.log("Delete product response:", response.data);
       showToast(`Product "${productName}" deleted successfully.`, {
         type: "success",
       });
@@ -696,7 +696,7 @@ export default function ProductsScreen() {
       )}
 
       {selectedProduct ? (
-        <View style={StyleSheet.absoluteFillObject}>
+        <View style={StyleSheet.absoluteFill}>
           <Pressable
             style={styles.modalBackdrop}
             onPress={() => setSelectedProduct(null)}
@@ -832,7 +832,7 @@ export default function ProductsScreen() {
       ) : null}
 
       {activeMenuProduct ? (
-        <View style={StyleSheet.absoluteFillObject}>
+        <View style={StyleSheet.absoluteFill}>
           <Pressable
             style={styles.menuBackdrop}
             onPress={() => setActiveMenuProduct(null)}
@@ -934,7 +934,7 @@ export default function ProductsScreen() {
       ) : null}
 
       {editingProduct ? (
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Pressable
             style={styles.dialogBackdrop}
             onPress={() => setEditingProduct(null)}
@@ -1025,7 +1025,7 @@ export default function ProductsScreen() {
       ) : null}
 
       {deletingProduct ? (
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Pressable
             style={styles.dialogBackdrop}
             onPress={() => setDeletingProduct(null)}
@@ -1311,7 +1311,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.75)",
     zIndex: 1000,
   },
@@ -1532,7 +1532,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.75)",
     zIndex: 2000,
   },
@@ -1611,12 +1611,12 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
   },
   dialogBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     zIndex: 3000,
   },
   dialogWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,

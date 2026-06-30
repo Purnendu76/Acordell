@@ -34,7 +34,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const hideTimeoutRef = useRef<any>(null);
 
   const hideToast = useCallback(() => {
+    // eslint-disable-next-line react-hooks/immutability
     translateY.value = withTiming(-100, { duration: 300 });
+    // eslint-disable-next-line react-hooks/immutability
     opacity.value = withTiming(0, { duration: 300 }, (finished) => {
       if (finished) {
         runOnJS(setToast)(null);
@@ -53,7 +55,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToast({ message, type });
 
     // Reset values first
+    // eslint-disable-next-line react-hooks/immutability
     translateY.value = -100;
+    // eslint-disable-next-line react-hooks/immutability
     opacity.value = 0;
 
     // Animate in
@@ -63,6 +67,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
     // Set timeout to hide
     hideTimeoutRef.current = setTimeout(() => {
+      
       hideToast();
     }, duration);
   }, [insets.top, translateY, opacity, hideToast]);

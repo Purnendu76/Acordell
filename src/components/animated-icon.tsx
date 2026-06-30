@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
-import Animated, { Easing, Keyframe, runOnJS } from 'react-native-reanimated';
+import Animated, { Easing, Keyframe, runOnJS, useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
@@ -8,38 +8,45 @@ const DURATION = 600;
 
 export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
+  const logoOpacity = useSharedValue(0);
+  const logoScale = useSharedValue(0.85);
+  const containerOpacity = useSharedValue(1);
 
-  if (!visible) return null;
+  useEffect(() => {
+    logoOpacity.value = withTiming(1, { duration: 800 });
+    logoScale.value = withTiming(1, { duration: 1000 });
 
-  const splashKeyframe = new Keyframe({
-    0: {
-      transform: [{ scale: INITIAL_SCALE_FACTOR }],
-      opacity: 1,
-    },
-    20: {
-      opacity: 1,
-    },
-    70: {
-      opacity: 0,
-      easing: Easing.elastic(0.7),
-    },
-    100: {
-      opacity: 0,
-      transform: [{ scale: 1 }],
-      easing: Easing.elastic(0.7),
-    },
-  });
-
-  return (
-    <Animated.View
-      entering={splashKeyframe.duration(DURATION).withCallback((finished) => {
-        'worklet';
+    containerOpacity.value = withDelay(
+      1800,
+      withTiming(0, { duration: 600 }, (finished) => {
         if (finished) {
           runOnJS(setVisible)(false);
         }
-      })}
-      style={styles.backgroundSolidColor}
-    />
+      })
+    );
+  }, [logoOpacity, logoScale, containerOpacity]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
+
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    transform: [{ scale: logoScale.value }],
+  }));
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View style={[styles.splashContainer, containerStyle]}>
+      <Animated.View style={logoStyle}>
+        <Image
+          source={require('../../assets/logo/Acordell-Hor-icon-1536x746.png')}
+          style={styles.splashLogo}
+          contentFit="contain"
+        />
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -83,13 +90,13 @@ export function AnimatedIcon() {
   return (
     <View style={styles.iconContainer}>
       <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
-
-      <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
-      </Animated.View>
+          <Image style={styles.glow} source={require('../../assets/images/logo-glow.png')} />
+        </Animated.View>
+  
+        <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
+        <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
+          <Image style={styles.image} source={require('../../assets/images/expo-logo.png')} />
+        </Animated.View>
     </View>
   );
 }
@@ -123,9 +130,16 @@ const styles = StyleSheet.create({
     height: 128,
     position: 'absolute',
   },
-  backgroundSolidColor: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#208AEF',
-    zIndex: 1000,
+  splashContainer: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#0a0b10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 99999,
+  },
+  splashLogo: {
+    width: 280,
+    height: 140,
+    maxWidth: '85%',
   },
 });

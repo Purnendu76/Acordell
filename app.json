@@ -1,19 +1,21 @@
 {
   "expo": {
-    "name": "Acordell",
-    "slug": "Acordell",
+    "name": "Accordell",
+    "slug": "accordell",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/logo/site-logo.png",
     "scheme": "acordell",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.acordell.app",
+      "icon": "./assets/logo/site-logo.png"
     },
     "android": {
+      "package": "com.acordell.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/logo/site-logo.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -28,19 +30,31 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#0a0b10",
+          "image": "./assets/logo/Acordell-Hor-icon-1536x746.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo/site-logo.png",
+          "color": "#818cf8"
+        }
+      ],
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6fd88a4f-1249-4ec0-9b91-5d091b5c63e1"
+      }
     }
   }
 }

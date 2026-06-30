@@ -11,8 +11,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   return (
     <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route: any, index: number) => {
-        // Skip index and explore routes in the custom tab bar rendering 
-        if (route.name === 'index' || route.name === 'explore') {
+        // Skip index, explore, and OrderDetails routes in the custom tab bar rendering 
+        if (route.name === 'index' || route.name === 'explore' || route.name === 'pages/Details_Info/OrderDetails') {
           return null;
         }
 
@@ -101,6 +101,13 @@ export default function AppTabs() {
       <Tabs.Screen name="pages/Home" />
       <Tabs.Screen name="pages/Products" />
       <Tabs.Screen name="pages/Orders" />
+      <Tabs.Screen 
+        name="pages/Details_Info/OrderDetails" 
+        options={{ 
+          href: null,
+          tabBarStyle: { display: 'none' }
+        }} 
+      />
       <Tabs.Screen name="pages/ContectUs" />
       <Tabs.Screen name="pages/Account" />
     </Tabs>

@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
+import { router } from 'expo-router';
 import Animated, { useSharedValue, withRepeat, withSequence, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 
 // Pulsing Skeleton loader block component
@@ -135,6 +136,7 @@ export default function OrdersScreen() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOrders();
   }, []);
 
@@ -258,7 +260,10 @@ export default function OrdersScreen() {
             const deliveryInfo = getDeliveryInfo(order);
 
             return (
-              <View style={styles.orderCard}>
+              <Pressable
+                onPress={() => router.push({ pathname: '/pages/Details_Info/OrderDetails', params: { id: order.id } })}
+                style={styles.orderCard}
+              >
                 {/* Order Header */}
                 <View style={styles.orderHeader}>
                   <View>
@@ -376,7 +381,7 @@ export default function OrdersScreen() {
                     <ThemedText style={styles.totalPrice}>₹{parseFloat(order.total).toLocaleString('en-IN')}</ThemedText>
                   </View>
                 </View>
-              </View>
+              </Pressable>
             );
           }}
           contentContainerStyle={styles.scrollContent}

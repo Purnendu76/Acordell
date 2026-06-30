@@ -1,0 +1,183 @@
+{
+  "name": "Accrodell push notification",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "push_tokens",
+        "returnAll": true,
+        "filterType": "none"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        80,
+        160
+      ],
+      "id": "aa51dfaf-60fa-4f00-886c-65fee827ee44",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8TG4WekjXdi4ltjp",
+          "name": "Accordell"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://exp.host/--/api/v2/push/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"{{ $json.token }}\",\n  \"title\": \"New Order Received! 🛍️\",\n  \"body\": \"Order #{{ $('WooCommerce Trigger').item.json.id }} has been placed.\",\n  \"sound\": \"mixkit_happy_bells_notification_937.wav\",\n  \"channelId\": \"order-alerts\",\n  \"data\": {\n    \"orderId\": \"{{ $('WooCommerce Trigger').item.json.id }}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        160
+      ],
+      "id": "01c3badf-1230-42ce-b56e-018f7d0652ce",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "event": "order.created"
+      },
+      "type": "n8n-nodes-base.wooCommerceTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        160
+      ],
+      "id": "3ea3b5b8-d794-45bf-b9e6-0c683f64af74",
+      "name": "WooCommerce Trigger",
+      "webhookId": "b39f84d7-a1cb-441d-8b92-4341ff291507",
+      "credentials": {
+        "wooCommerceApi": {
+          "id": "L9YUgOuc2vgaHU7L",
+          "name": "Sugar Story WooCommerce"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "register-token-accordell",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        -96
+      ],
+      "id": "5bc844c2-e3d9-435b-9fa5-9fc87b10f007",
+      "name": "Webhook",
+      "webhookId": "00a92646-c9ae-4ba1-aa33-210dfad764b1"
+    },
+    {
+      "parameters": {
+        "tableId": "push_tokens",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "token",
+              "fieldValue": "={{ $json.body.token }}"
+            },
+            {
+              "fieldId": "device_type",
+              "fieldValue": "={{ $json.body.platform }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -96
+      ],
+      "id": "27551589-bbb3-456e-b0f6-43068b9b0245",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8TG4WekjXdi4ltjp",
+          "name": "Accordell"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Push notifications\n",
+        "height": 544,
+        "width": 816,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "68ea1308-0379-441e-9bb6-0b2e3e315daa",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c7976a41-bb55-4802-9fed-c7684929843f",
+  "meta": {
+    "instanceId": "031309915a0a453d6414710542858fed4833fec1142fbf035e6ed4b2fb5d0711"
+  },
+  "id": "VRC54mSTHdPHl5jv",
+  "tags": []
+}

@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Firebase Admin SDK Credentials (Secrets)
+accordell-firebase-adminsdk-fbsvc-*.json

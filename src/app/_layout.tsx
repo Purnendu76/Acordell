@@ -1,14 +1,19 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
 import { useColorScheme, View, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { usePathname } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { ThemedText } from '@/components/themed-text';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ToastProvider } from '@/components/toast';
+import { registerBackgroundNotifications, initializeNotifications } from '@/utils/notifications';
+
+SplashScreen.preventAutoHideAsync();
+registerBackgroundNotifications();
 
 function GlobalHeader() {
   const insets = useSafeAreaInsets();
@@ -16,7 +21,7 @@ function GlobalHeader() {
     <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 8) }]}>
       <View style={styles.logoWrapper}>
         <Image
-          source={require('@/assets/logo/site-logo.png')}
+          source={require('../../assets/logo/site-logo.png')}
           style={styles.logo}
           contentFit="contain"
         />
@@ -41,12 +46,22 @@ function GlobalHeader() {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    initializeNotifications();
+    // Hide the native splash screen once the JS is mounted and ready
+    SplashScreen.hideAsync();
+  }, []);
+
+  const showHeader = pathname !== '/pages/Details_Info/OrderDetails';
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ToastProvider>
         <AnimatedSplashOverlay />
         <View style={styles.appContainer}>
-          <GlobalHeader />
+          {showHeader && <GlobalHeader />}
           <AppTabs />
         </View>
       </ToastProvider>
