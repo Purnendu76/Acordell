@@ -4,7 +4,8 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
+import { ordersCache } from "../Orders";
 import {
   ActivityIndicator,
   Pressable,
@@ -55,7 +56,23 @@ export default function OrderDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isFetching = useRef(false);
+
   const fetchOrderDetails = useCallback(async () => {
+    // 1. If we have cached orders, find the order and use it immediately!
+    if (ordersCache) {
+      const found = ordersCache.find((o) => String(o.id) === String(id));
+      if (found) {
+        setOrder(found);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // 2. Concurrency guard to prevent concurrent requests
+    if (isFetching.current) return;
+    isFetching.current = true;
+
     setLoading(true);
     setError(null);
     try {
@@ -77,6 +94,7 @@ export default function OrderDetailsScreen() {
       setError(err?.message || "Failed to load order details.");
     } finally {
       setLoading(false);
+      isFetching.current = false;
     }
   }, [id]);
 

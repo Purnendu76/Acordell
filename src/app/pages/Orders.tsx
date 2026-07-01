@@ -109,6 +109,8 @@ const TABS = ['Active', 'Completed', 'Cancelled'];
 // Fallback image for items that don't have an image source
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=200&auto=format&fit=crop&q=80';
 
+export let ordersCache: Order[] | null = null;
+
 export function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -118,12 +120,20 @@ export function OrdersScreen() {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fetchOrders = async (showLoader = true) => {
+    // If cache has data and this isn't a manual pull-to-refresh, use cache
+    if (ordersCache && showLoader) {
+      setOrders(ordersCache);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     if (showLoader) setLoading(true);
     setError(null);
     try {
       const response = await axios.get<Order[]>('https://n8n.srv917960.hstgr.cloud/webhook/acordell-get-orders');
       if (Array.isArray(response.data)) {
         setOrders(response.data);
+        ordersCache = response.data; // Cache the fetched orders
       } else {
         throw new Error('Invalid data format received from API');
       }
@@ -143,6 +153,7 @@ export function OrdersScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    ordersCache = null; // Clear cache on manual pull-to-refresh
     fetchOrders(false);
   };
 

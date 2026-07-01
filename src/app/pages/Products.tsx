@@ -26,6 +26,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { Redirect } from 'expo-router';
+
 function Skeleton({ style }: { style: any }) {
   const opacity = useSharedValue(0.3);
 
@@ -225,6 +227,8 @@ const stripHtml = (html: string): string => {
     .trim();
 };
 
+let productsCache: Product[] | null = null;
+
 export function ProductsScreen() {
   const { showToast } = useToast();
   const { productId } = useLocalSearchParams<{ productId?: string }>();
@@ -249,6 +253,13 @@ export function ProductsScreen() {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   const fetchProducts = async (showLoader = true) => {
+    // If cache has data and this isn't a manual pull-to-refresh, use cache
+    if (productsCache && showLoader) {
+      setProducts(productsCache);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     if (showLoader) setLoading(true);
     setError(null);
     try {
@@ -264,6 +275,7 @@ export function ProductsScreen() {
           parsedImage: parseImageSrc(p.images),
         }));
         setProducts(processed);
+        productsCache = processed; // Cache the processed products data
       } else {
         throw new Error("Invalid data format received from products API");
       }
@@ -289,6 +301,7 @@ export function ProductsScreen() {
       const prodIdNum = parseInt(productId, 10);
       const prod = products.find((p) => p.id === prodIdNum);
       if (prod) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedProduct(prod);
       }
     }
@@ -296,6 +309,7 @@ export function ProductsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    productsCache = null; // Clear cache on manual pull-to-refresh
     fetchProducts(false);
   };
 
@@ -1748,8 +1762,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-import { Redirect } from 'expo-router';
 export default function ProductsRedirect() {
   const params = useLocalSearchParams();
   return <Redirect href={{ pathname: "/pages/Home", params: { tab: "1", ...params } }} />;
