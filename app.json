@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.acordell.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/logo/site-logo.png",
@@ -23,7 +24,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/logo/site-logo.png"
     },
     "plugins": [
       "expo-router",

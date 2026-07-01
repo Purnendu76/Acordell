@@ -49,7 +49,9 @@ export default function TabLayout() {
   const pathname = usePathname();
 
   useEffect(() => {
-    initializeNotifications();
+    initializeNotifications().catch((err) => {
+      console.error('initializeNotifications crashed:', err);
+    });
     // Hide the native splash screen once the JS is mounted and ready
     SplashScreen.hideAsync();
   }, []);

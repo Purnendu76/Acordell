@@ -1,6 +1,7 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useToast } from "@/components/toast";
+import { useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { Image } from "expo-image";
@@ -226,6 +227,7 @@ const stripHtml = (html: string): string => {
 
 export default function ProductsScreen() {
   const { showToast } = useToast();
+  const { productId } = useLocalSearchParams<{ productId?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -281,6 +283,16 @@ export default function ProductsScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (productId && products.length > 0) {
+      const prodIdNum = parseInt(productId, 10);
+      const prod = products.find((p) => p.id === prodIdNum);
+      if (prod) {
+        setSelectedProduct(prod);
+      }
+    }
+  }, [productId, products]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -361,7 +373,10 @@ export default function ProductsScreen() {
     }
   };
 
-  const handleDeleteProduct = async (productId: number, productName: string) => {
+  const handleDeleteProduct = async (
+    productId: number,
+    productName: string,
+  ) => {
     setDeleteLoading(true);
     try {
       await axios.delete(
@@ -371,7 +386,7 @@ export default function ProductsScreen() {
             id: productId,
             product_id: productId,
           },
-        }
+        },
       );
       showToast(`Product "${productName}" deleted successfully.`, {
         type: "success",
@@ -382,10 +397,9 @@ export default function ProductsScreen() {
       fetchProducts(false);
     } catch (err: any) {
       console.error("Error deleting product:", err);
-      showToast(
-        err?.message || `Failed to delete product "${productName}".`,
-        { type: "error" }
-      );
+      showToast(err?.message || `Failed to delete product "${productName}".`, {
+        type: "error",
+      });
     } finally {
       setDeleteLoading(false);
     }
@@ -913,10 +927,7 @@ export default function ProductsScreen() {
                   color="#ef4444"
                 />
                 <ThemedText
-                  style={[
-                    styles.menuOptionText,
-                    styles.menuOptionTextDanger,
-                  ]}
+                  style={[styles.menuOptionText, styles.menuOptionTextDanger]}
                 >
                   Delete Product
                 </ThemedText>
@@ -1033,15 +1044,19 @@ export default function ProductsScreen() {
 
           <View style={styles.dialogWrapper} pointerEvents="box-none">
             <View style={styles.dialogContainer}>
-              <ThemedText style={styles.dialogTitle}>
-                Delete Product
-              </ThemedText>
+              <ThemedText style={styles.dialogTitle}>Delete Product</ThemedText>
               <ThemedText style={styles.dialogSubtitle} numberOfLines={1}>
                 {deletingProduct.cleanName || deletingProduct.name}
               </ThemedText>
 
-              <ThemedText style={[styles.descriptionText, { marginTop: 8, marginBottom: 8 }]}>
-                Are you sure you want to delete this product? This action cannot be undone.
+              <ThemedText
+                style={[
+                  styles.descriptionText,
+                  { marginTop: 8, marginBottom: 8 },
+                ]}
+              >
+                Are you sure you want to delete this product? This action cannot
+                be undone.
               </ThemedText>
 
               <View style={styles.dialogFooter}>
@@ -1059,10 +1074,13 @@ export default function ProductsScreen() {
                   onPress={() =>
                     handleDeleteProduct(
                       deletingProduct.id,
-                      deletingProduct.cleanName || deletingProduct.name
+                      deletingProduct.cleanName || deletingProduct.name,
                     )
                   }
-                  style={[styles.dialogSaveButton, { backgroundColor: "#ef4444" }]}
+                  style={[
+                    styles.dialogSaveButton,
+                    { backgroundColor: "#ef4444" },
+                  ]}
                   disabled={deleteLoading}
                 >
                   {deleteLoading ? (

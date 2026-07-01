@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, View, Pressable, RefreshControl, FlatList } from 'react-native';
+import { StyleSheet, View, Pressable, RefreshControl, FlatList, TextInput, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -115,6 +115,7 @@ export default function OrdersScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<string>('Active');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fetchOrders = async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -201,10 +202,25 @@ export default function OrdersScreen() {
     return counts;
   }, [orders]);
 
-  // Memoize filtered orders
+  // Memoize filtered orders based on tab and search query
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => getOrderStatusTab(order.status) === selectedTab);
-  }, [orders, selectedTab]);
+    const query = searchQuery.toLowerCase().trim();
+    return orders.filter((order) => {
+      const matchesTab = getOrderStatusTab(order.status) === selectedTab;
+      if (!matchesTab) return false;
+
+      const matchesSearch =
+        !query ||
+        order.id.toString().includes(query) ||
+        (order.billing?.first_name || '').toLowerCase().includes(query) ||
+        (order.billing?.last_name || '').toLowerCase().includes(query) ||
+        (order.line_items || []).some(
+          (item) => (item.name || '').toLowerCase().includes(query)
+        );
+
+      return matchesSearch;
+    });
+  }, [orders, selectedTab, searchQuery]);
 
   const getDeliveryInfo = (order: Order) => {
     const deliveryDateMeta = order.meta_data.find(m => m.key === 'Delivery Date');
@@ -220,6 +236,23 @@ export default function OrdersScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <MaterialCommunityIcons
+          name="magnify"
+          size={20}
+          color="#94a3b8"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          placeholder="Search order ID, products, names..."
+          placeholderTextColor="#64748b"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+        />
+      </View>
+
       {/* Tabs */}
       <View style={styles.tabContainer}>
         {TABS.map((tab) => {
@@ -407,6 +440,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0b10', // Dark premium background
     paddingHorizontal: 16,
     paddingTop: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161824',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 14,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+      },
+    }),
   },
   tabContainer: {
     flexDirection: 'row',

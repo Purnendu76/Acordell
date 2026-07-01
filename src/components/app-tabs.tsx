@@ -95,6 +95,7 @@ export default function AppTabs() {
       screenOptions={{
         headerShown: false,
       }}
+      backBehavior="history"
     >
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
