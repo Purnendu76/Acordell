@@ -109,7 +109,7 @@ const TABS = ['Active', 'Completed', 'Cancelled'];
 // Fallback image for items that don't have an image source
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=200&auto=format&fit=crop&q=80';
 
-export default function OrdersScreen() {
+export function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -754,3 +754,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+import { Redirect, useLocalSearchParams } from 'expo-router';
+export default function OrdersRedirect() {
+  const params = useLocalSearchParams();
+  return <Redirect href={{ pathname: "/pages/Home", params: { tab: "2", ...params } }} />;
+}

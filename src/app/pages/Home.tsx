@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, LayoutAnimation } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, ScrollView, Pressable, LayoutAnimation, Dimensions, Keyboard, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useLocalSearchParams } from 'expo-router';
+
+// Named imports for other screens
+import { ProductsScreen } from './Products';
+import { OrdersScreen } from './Orders';
+import { ContactUsScreen } from './ContectUs';
+import { AccountScreen } from './Account';
 
 // Circular brand listings for top scroll
 const BRANDS = [
@@ -40,7 +47,7 @@ const CONCENTRATIONS = [
   { title: 'Extrait de Parfum', abbr: 'Parfum', pct: '20-40%', desc: 'Deepest concentration, lasts 8+ hours. Absolute luxury.' },
 ];
 
-export default function HomeScreen() {
+function HomeContent() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
@@ -187,6 +194,146 @@ export default function HomeScreen() {
 
       </ScrollView>
     </ThemedView>
+  );
+}
+
+const { width: screenWidth } = Dimensions.get('window');
+
+function TabBar({ activeIndex, onTabPress }: { activeIndex: number; onTabPress: (index: number) => void }) {
+  const insets = useSafeAreaInsets();
+  
+  const tabs = [
+    { label: 'Home', icon: 'home-outline', activeIcon: 'home' },
+    { label: 'Products', icon: 'storefront-outline', activeIcon: 'storefront' },
+    { label: 'Orders', icon: 'clipboard-text-outline', activeIcon: 'clipboard-text' },
+    { label: 'Contact Us', icon: 'message-text-outline', activeIcon: 'message-text' },
+    { label: 'Account', icon: 'account-outline', activeIcon: 'account' },
+  ];
+
+  return (
+    <View style={[tabBarStyles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      {tabs.map((tab, index) => {
+        const isFocused = activeIndex === index;
+        const activeColor = '#818cf8';
+        const inactiveColor = '#94a3b8';
+        const iconColor = isFocused ? activeColor : inactiveColor;
+        const textColor = isFocused ? activeColor : inactiveColor;
+
+        return (
+          <Pressable
+            key={index}
+            onPress={() => onTabPress(index)}
+            style={tabBarStyles.tabItem}
+            android_ripple={{ color: '#161824', borderless: true }}
+          >
+            <MaterialCommunityIcons
+              name={(isFocused ? tab.activeIcon : tab.icon) as any}
+              size={24}
+              color={iconColor}
+            />
+            <ThemedText style={[tabBarStyles.tabLabel, { color: textColor }]}>
+              {tab.label}
+            </ThemedText>
+            {isFocused && <View style={tabBarStyles.dot} />}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const tabBarStyles = StyleSheet.create({
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#0a0b10',
+    borderTopWidth: 1,
+    borderTopColor: '#161824',
+    paddingTop: 8,
+    height: Platform.OS === 'web' ? 70 : 80,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#818cf8',
+    marginTop: 4,
+  },
+});
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+export default function HomeScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const handleTabPress = (index: number) => {
+    setActiveIndex(index);
+    scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+    Keyboard.dismiss();
+  };
+
+  const handleScroll = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / screenWidth);
+    if (index !== activeIndex && index >= 0 && index < 5) {
+      setActiveIndex(index);
+    }
+  };
+
+  useEffect(() => {
+    if (tab !== undefined) {
+      const tabIdx = parseInt(tab, 10);
+      if (!isNaN(tabIdx) && tabIdx >= 0 && tabIdx < 5) {
+        setTimeout(() => {
+          handleTabPress(tabIdx);
+        }, 100);
+      }
+    }
+  }, [tab]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0a0b10' }}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ width: screenWidth * 5 }}
+      >
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <HomeContent />
+        </View>
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ProductsScreen />
+        </View>
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <OrdersScreen />
+        </View>
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <ContactUsScreen />
+        </View>
+        <View style={{ width: screenWidth, flex: 1 }}>
+          <AccountScreen />
+        </View>
+      </ScrollView>
+
+      <TabBar activeIndex={activeIndex} onTabPress={handleTabPress} />
+    </View>
   );
 }
 

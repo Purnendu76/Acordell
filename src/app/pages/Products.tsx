@@ -225,7 +225,7 @@ const stripHtml = (html: string): string => {
     .trim();
 };
 
-export default function ProductsScreen() {
+export function ProductsScreen() {
   const { showToast } = useToast();
   const { productId } = useLocalSearchParams<{ productId?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
@@ -1748,3 +1748,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+import { Redirect } from 'expo-router';
+export default function ProductsRedirect() {
+  const params = useLocalSearchParams();
+  return <Redirect href={{ pathname: "/pages/Home", params: { tab: "1", ...params } }} />;
+}

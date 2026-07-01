@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
-export default function AccountScreen() {
+export function AccountScreen() {
   return (
     <ThemedView style={styles.container}>
       <MaterialCommunityIcons name="account-outline" size={64} color="#818cf8" />
@@ -56,3 +56,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+import { Redirect, useLocalSearchParams } from 'expo-router';
+export default function AccountRedirect() {
+  const params = useLocalSearchParams();
+  return <Redirect href={{ pathname: "/pages/Home", params: { tab: "4", ...params } }} />;
+}
